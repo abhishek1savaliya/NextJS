@@ -1,62 +1,56 @@
-import { NextResponse } from 'next/server'
+import { connectDb } from '@/helper/db';
+import { NextResponse } from 'next/server';
+import { User } from '@/models/user';
 
-//Get User Function 
-export function GET() {
-    const users = [
-        {
-            name: 'Krishna',
-            phone: 9878654321,
-            position: "God"
-        },
-        {
-            name: 'Radha',
-            phone: 9878654321,
-            position: "God"
-        },
-        {
-            name: 'Mohan',
-            phone: 9878654321,
-            position: "God"
-        },
-    ]
-    return NextResponse.json(users)
-}
-let z = 0;
-//POST Request Function
-export async function POST(request) {
-    const body = request.body;
-    console.log(body)
-    console.log(request.method);
-    request.cookies.set('Krishna Creation', 'true')
-    console.log(request.cookies);
-    console.log(request.nextUrl.pathname)
-    console.log(typeof request.nextUrl.searchParams)
-    console.log(request.headers)
-    const json = await request.json()
-    console.log(json)
+// Connect to the database
+connectDb();
 
-    // const text =await request.text()
-    // console.log(text)
-    z = z + 1;
-    return NextResponse.json({
-        message: `Posting User Data ${z}`,
-    })
+// Get User Function 
+export async function GET() {
+    try {
+        const users = await User.find().select("-password") ;
+
+        const totalCount = await User.countDocuments({});
+
+        return NextResponse.json({
+            data: users,
+            totalCount: totalCount,
+        });
+    } catch (err) {
+        return NextResponse.json({
+            message: "Failed to get users"
+        });
+    }
 }
 
+// POST Request Function
+// Create User
+export async function POST(request: Request) {
+    try {
+        const { name, email, password, about, profileURL } = await request.json();
 
-//Delete Request Function 
+        const user = new User({ name, email, password, about, profileURL });
+        const createdUser = await user.save();
+
+        return NextResponse.json(createdUser, { status: 201 });
+    } catch (err) {
+        return NextResponse.json({ message: 'Error in add user' }, { status: 401 });
+    }
+}
+
+// Delete Request Function 
 export function DELETE(request: Request) {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     return NextResponse.json({
         message: `id : ${id} deleted`,
         status: true
     }, {
         status: 202,
         statusText: "user deleted successfully"
-    })
+    });
 }
 
 export function PUT() {
-
+    // Implement your PUT logic here
 }
